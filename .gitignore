@@ -1,0 +1,8 @@
+__pycache__/
+*.pyc
+out/
+*.pdf
+*.png
+*.tsv
+*.txt
+!bin/*
