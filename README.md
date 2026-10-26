@@ -79,6 +79,8 @@ separate phases (propose, review, apply). Copy it into a plugin or `.claude/skil
   share. Adjust `file-docs.py` if yours does not.
 - The blank-page thresholds (0.2 % ink, 10 mm component) and the duplicate thresholds in
   `scanlib.py` were tuned on one scanner and one archive. Expect to re-tune.
+- Scanner-facing changes must follow the [scanner validation notes](docs/agents/scanner-traps.md).
+
 
 ## License
 
