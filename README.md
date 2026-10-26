@@ -79,6 +79,12 @@ separate phases (propose, review, apply). Copy it into a plugin or `.claude/skil
   share. Adjust `file-docs.py` if yours does not.
 - The blank-page thresholds (0.2 % ink, 10 mm component) and the duplicate thresholds in
   `scanlib.py` were tuned on one scanner and one archive. Expect to re-tune.
+- Reference device: a Canon GX4000 series. Its eSCL capabilities list only
+  `AdfSimplexInputCaps`; a job with `Duplex=true` is accepted and still delivered simplex, and
+  the panel's "ADF duplex" is a guided second pass, hence the two passes here. A jam returns
+  HTTP 200 with a truncated PDF and the job status `ScannerAdfJam` / `JobCanceledAtDevice`,
+  never an HTTP error, so `escl-scan.sh` reads the job status. Sticky sheets go on the flatbed.
+  Test changes against a real scanner.
 
 ## License
 
