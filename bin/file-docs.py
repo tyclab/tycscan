@@ -45,6 +45,7 @@ for pages,rel,old in plan:
         if rel!=old and os.path.exists(archive_path(rel)): print(f"S.{pages:6s} REPLACE verweigert, Ziel existiert: {rel}"); continue
     dst=archive_path(rel); tmp=os.path.join("out",os.path.basename(rel))
     subprocess.run(["qpdf","--empty","--pages",PDF,pages,"--",tmp],check=True)
+    doc=wn_pages(tmp)
     if old:
         bin_=archive_path(os.path.join("_Papierkorb","ersetzt",old)); os.makedirs(os.path.dirname(bin_),exist_ok=True)
         shutil.move(archive_path(old),bin_); os.makedirs(os.path.dirname(dst),exist_ok=True); shutil.copy2(tmp,dst)
@@ -53,7 +54,7 @@ for pages,rel,old in plan:
             w.writerow(["move",os.path.join(R,old),bin_])
             w.writerow(["scan-replace",f"{BATCH} S.{pages}",rel.replace('/',chr(92))])
         print(f"S.{pages:6s} REPLACE {old} -> _Papierkorb/ersetzt; abgelegt: {rel}"); continue
-    arch=folder(os.path.dirname(dst)); dup=None; doc=wn_pages(tmp)
+    arch=folder(os.path.dirname(dst)); dup=None
     lo=sum((long_nums(cn) for _,cn in doc),Counter())   # Kennzahlen des ganzen Dokuments, auch von textarmen Seiten (SIM-Traeger)
     for e,pp in arch.items():
         grp=[b for b in (best_page(c,cn,{e:pp}) for c,cn in doc) if b]

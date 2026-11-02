@@ -102,6 +102,17 @@ class FilingTests(unittest.TestCase):
         self.assert_refused("1\tdocument.pdf\n")
         self.assertFalse((self.archive / "document.pdf").exists())
 
+    def test_failed_replacement_extraction_preserves_original_without_journal(self):
+        old = self.archive / "old.pdf"
+        old.write_text("original")
+        self.pdf.write_text("FAIL encrypted or corrupt replacement")
+        for target in ("old.pdf", "new.pdf"):
+            with self.subTest(target=target):
+                self.assert_refused(f"1\tREPLACE old.pdf => {target}\n")
+                self.assertEqual(old.read_text(), "original")
+                self.assertFalse((self.archive / "new.pdf").exists())
+                self.assertFalse((self.archive / "_Papierkorb").exists())
+
     def test_failed_archive_extraction_is_not_ignored(self):
         (self.archive / "unreadable.pdf").write_text("FAIL corrupt archive PDF")
         self.assert_refused("1\tdocument.pdf\n")
