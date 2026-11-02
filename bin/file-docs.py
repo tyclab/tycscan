@@ -9,36 +9,52 @@ import subprocess,os,sys,shutil,glob,csv
 from scanlib import wn_pages,best_page,same_paper,long_nums,L_MIN
 from collections import Counter
 PDF,SPEC,R,J,BATCH=sys.argv[1:6]
+R=os.path.realpath(R)
+def archive_path(rel):
+    path=os.path.realpath(os.path.join(R,rel))
+    if os.path.isabs(rel) or ".." in rel.split(os.sep) or path==R or os.path.commonpath([R,path])!=R:
+        raise ValueError(f"Archivpfad ausserhalb des erlaubten Wurzelverzeichnisses: {rel}")
+    return path
+
+plan=[]
+with open(SPEC) as spec:
+    for line in spec:
+        if not line.strip() or line.startswith("#"): continue
+        f=line.rstrip("\n").split("\t"); pages,rel=f[0],f[1]; old=None
+        if rel.upper()!="SKIP":
+            if rel.upper().startswith("REPLACE "):
+                old,_,new=rel[8:].partition(" => "); old=old.strip(); rel=new.strip() or old
+                archive_path(old)
+                archive_path(os.path.join("_Papierkorb","ersetzt",old))
+            archive_path(rel)
+        plan.append((pages,rel,old))
+
 os.makedirs("out",exist_ok=True)
 cache={}   # zielordner -> {datei: seiten}
 def folder(d):
     if d not in cache:
         cache[d]={}
         for e in glob.glob(os.path.join(d,"*.[pP][dD][fF]")):
-            try: pp=wn_pages(e)
-            except Exception: continue
+            pp=wn_pages(e)
             if pp: cache[d][e]=pp
     return cache[d]
-for line in open(SPEC):
-    if not line.strip() or line.startswith("#"): continue
-    f=line.rstrip("\n").split("\t"); pages,rel=f[0],f[1]
+for pages,rel,old in plan:
     if rel.upper()=="SKIP": print(f"S.{pages:6s} SKIP"); continue
-    old=None
-    if rel.upper().startswith("REPLACE "):
-        old,_,new=rel[8:].partition(" => "); old=old.strip(); rel=new.strip() or old
-        if not os.path.isfile(os.path.join(R,old)): print(f"S.{pages:6s} REPLACE verweigert, Archivdatei fehlt: {old}"); continue
-        if rel!=old and os.path.exists(os.path.join(R,rel)): print(f"S.{pages:6s} REPLACE verweigert, Ziel existiert: {rel}"); continue
-    dst=os.path.join(R,rel); tmp=os.path.join("out",os.path.basename(rel))
-    subprocess.run(["qpdf","--empty","--pages",PDF,pages,"--",tmp],check=True)
     if old:
-        bin_=os.path.join(R,"_Papierkorb","ersetzt",old); os.makedirs(os.path.dirname(bin_),exist_ok=True)
-        shutil.move(os.path.join(R,old),bin_); os.makedirs(os.path.dirname(dst),exist_ok=True); shutil.copy2(tmp,dst)
+        if not os.path.isfile(archive_path(old)): print(f"S.{pages:6s} REPLACE verweigert, Archivdatei fehlt: {old}"); continue
+        if rel!=old and os.path.exists(archive_path(rel)): print(f"S.{pages:6s} REPLACE verweigert, Ziel existiert: {rel}"); continue
+    dst=archive_path(rel); tmp=os.path.join("out",os.path.basename(rel))
+    subprocess.run(["qpdf","--empty","--pages",PDF,pages,"--",tmp],check=True)
+    doc=wn_pages(tmp)
+    if old:
+        bin_=archive_path(os.path.join("_Papierkorb","ersetzt",old)); os.makedirs(os.path.dirname(bin_),exist_ok=True)
+        shutil.move(archive_path(old),bin_); os.makedirs(os.path.dirname(dst),exist_ok=True); shutil.copy2(tmp,dst)
         with open(J,"a",encoding="utf8",newline="") as j:
             w=csv.writer(j,lineterminator="\n")
             w.writerow(["move",os.path.join(R,old),bin_])
             w.writerow(["scan-replace",f"{BATCH} S.{pages}",rel.replace('/',chr(92))])
         print(f"S.{pages:6s} REPLACE {old} -> _Papierkorb/ersetzt; abgelegt: {rel}"); continue
-    arch=folder(os.path.dirname(dst)); dup=None; doc=wn_pages(tmp)
+    arch=folder(os.path.dirname(dst)); dup=None
     lo=sum((long_nums(cn) for _,cn in doc),Counter())   # Kennzahlen des ganzen Dokuments, auch von textarmen Seiten (SIM-Traeger)
     for e,pp in arch.items():
         grp=[b for b in (best_page(c,cn,{e:pp}) for c,cn in doc) if b]

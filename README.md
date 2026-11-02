@@ -71,6 +71,12 @@ nix shell nixpkgs#qpdf nixpkgs#poppler-utils -c python3 bin/file-docs.py \
 `skills/scan-file/SKILL.md` is a Claude Code skill that drives the classification step in three
 separate phases (propose, review, apply). Copy it into a plugin or `.claude/skills/` to use it.
 
+Before filing starts, every destination and replacement/recycle path must stay within
+the archive root, including resolved symlinks. Absolute paths and parent traversal are
+rejected. Text-extraction failures stop filing; they are never treated as blank pages or
+silently omitted from duplicate checking. `make test` runs disposable offline fixtures
+without contacting a scanner or changing an existing archive.
+
 ## Notes
 
 - Prompts and comments are German; the heuristics look for German page markers first
