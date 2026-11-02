@@ -8,9 +8,9 @@ import os
 STOP=set("seite unserer unseren ihrer ihren ihnen dieser diesem dieses einer einem eines werden wurden koennen können bitte sowie durch nicht sehr geehrte geehrter herrn frau deutschland telefon telefax e-mail internet datum betrag euro gesamt".split())
 STOP|=set(os.environ.get("SCAN_STOPWORDS","").lower().split())
 def txt(pdf,p):
-    return subprocess.run(["pdftotext","-f",str(p),"-l",str(p),pdf,"-"],capture_output=True,text=True).stdout
+    return subprocess.run(["pdftotext","-f",str(p),"-l",str(p),pdf,"-"],capture_output=True,text=True,check=True).stdout
 def pages(pdf):
-    out=subprocess.run(["pdfinfo",pdf],capture_output=True,text=True).stdout
+    out=subprocess.run(["pdfinfo",pdf],capture_output=True,text=True,check=True).stdout
     m=re.search(r"^Pages:\s+(\d+)",out,re.M); return int(m[1]) if m else 0
 def ids(t):
     out=set()
@@ -39,7 +39,7 @@ def long_nums(cn):
     return Counter({k:v for k,v in cn.items() if len(re.sub(r"\D","",k))>=7})
 def wn_pages(pdf):
     """Je Seite (Counter Woerter, Counter Zahlen); leere Schlussseiten entfallen."""
-    t=subprocess.run(["pdftotext",pdf,"-"],capture_output=True,text=True).stdout.lower()
+    t=subprocess.run(["pdftotext",pdf,"-"],capture_output=True,text=True,check=True).stdout.lower()
     out=[(Counter(W4.findall(x)),Counter(NUM.findall(x))) for x in t.split("\f")]
     while out and not out[-1][0]: out.pop()
     return out
